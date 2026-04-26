@@ -43,30 +43,43 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   }
 
   Future<void> _signOut() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Sign Out'),
-        content: const Text('Are you sure you want to sign out?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Sign Out'),
-          ),
-        ],
-      ),
-    );
+    final user = Supabase.instance.client.auth.currentUser;
 
-    if (confirm == true) {
-      await Supabase.instance.client.auth.signOut();
+    if (user != null) {
+      // User is logged in, show sign out confirmation
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Sign Out'),
+          content: const Text('Are you sure you want to sign out?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Sign Out'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirm == true) {
+        await Supabase.instance.client.auth.signOut();
+        if (mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+            (route) => false,
+          );
+        }
+      }
+    } else {
+      // Guest user, navigate to login screen
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const LoginScreen()),
-              (route) => false,
+          (route) => false,
         );
       }
     }
@@ -144,9 +157,17 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                           ],
                         ),
                         IconButton(
-                          icon: const Icon(Icons.logout, color: Colors.white),
+                          icon: Icon(
+                            Supabase.instance.client.auth.currentUser != null
+                                ? Icons.logout
+                                : Icons.login,
+                            color: Colors.white,
+                          ),
                           onPressed: _signOut,
-                          tooltip: 'Sign Out',
+                          tooltip:
+                              Supabase.instance.client.auth.currentUser != null
+                                  ? 'Sign Out'
+                                  : 'Sign In',
                         ),
                       ],
                     ),
@@ -202,7 +223,8 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                         _buildFeatureCard(
                           icon: Icons.view_in_ar,
                           title: 'AR Try-On',
-                          description: 'Try t-shirts virtually with AR technology',
+                          description:
+                              'Try t-shirts virtually with AR technology',
                           gradient: const LinearGradient(
                             colors: [Colors.purple, Colors.deepPurple],
                           ),
@@ -222,7 +244,8 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                         _buildFeatureCard(
                           icon: Icons.shopping_bag,
                           title: 'Browse T-Shirts',
-                          description: 'Explore our collection of unique designs',
+                          description:
+                              'Explore our collection of unique designs',
                           gradient: const LinearGradient(
                             colors: [Colors.blue, Colors.lightBlue],
                           ),
@@ -478,146 +501,149 @@ class _ARTryOnPageState extends State<ARTryOnPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _arTshirts.isEmpty
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.view_in_ar, size: 100, color: Colors.grey[300]),
-            const SizedBox(height: 16),
-            Text(
-              'No AR-enabled t-shirts yet',
-              style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Check back soon for 3D try-on!',
-              style: TextStyle(color: Colors.grey[500]),
-            ),
-          ],
-        ),
-      )
-          : GridView.builder(
-        padding: const EdgeInsets.all(16),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.7,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-        ),
-        itemCount: _arTshirts.length,
-        itemBuilder: (context, index) {
-          final tshirt = _arTshirts[index];
-          final designer = tshirt['users'] as Map<String, dynamic>;
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.view_in_ar,
+                          size: 100, color: Colors.grey[300]),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No AR-enabled t-shirts yet',
+                        style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Check back soon for 3D try-on!',
+                        style: TextStyle(color: Colors.grey[500]),
+                      ),
+                    ],
+                  ),
+                )
+              : GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.7,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                  ),
+                  itemCount: _arTshirts.length,
+                  itemBuilder: (context, index) {
+                    final tshirt = _arTshirts[index];
+                    final designer = tshirt['users'] as Map<String, dynamic>;
 
-          return GestureDetector(
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('🎉 AR Try-On feature coming soon!'),
-                  backgroundColor: Colors.purple,
-                ),
-              );
-            },
-            child: Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-                side: const BorderSide(color: Colors.purple, width: 2),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(15),
+                    return GestureDetector(
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('🎉 AR Try-On feature coming soon!'),
+                            backgroundColor: Colors.purple,
                           ),
-                          child: tshirt['image_url'] != null
-                              ? Image.network(
-                            tshirt['image_url'],
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          )
-                              : Container(
-                            color: Colors.grey[300],
-                            child: const Icon(Icons.image, size: 60),
-                          ),
+                        );
+                      },
+                      child: Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          side:
+                              const BorderSide(color: Colors.purple, width: 2),
                         ),
-                        Positioned(
-                          top: 8,
-                          right: 8,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.purple,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.view_in_ar,
-                                    size: 12, color: Colors.white),
-                                SizedBox(width: 4),
-                                Text(
-                                  'AR',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Stack(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: const BorderRadius.vertical(
+                                      top: Radius.circular(15),
+                                    ),
+                                    child: tshirt['image_url'] != null
+                                        ? Image.network(
+                                            tshirt['image_url'],
+                                            width: double.infinity,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Container(
+                                            color: Colors.grey[300],
+                                            child: const Icon(Icons.image,
+                                                size: 60),
+                                          ),
                                   ),
-                                ),
-                              ],
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.purple,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.view_in_ar,
+                                              size: 12, color: Colors.white),
+                                          SizedBox(width: 4),
+                                          Text(
+                                            'AR',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
+                            Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    tshirt['title'],
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'by ${designer['full_name']}',
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    '₱${tshirt['price']}',
+                                    style: const TextStyle(
+                                      color: Colors.purple,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          tshirt['title'],
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'by ${designer['full_name']}',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 11,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '₱${tshirt['price']}',
-                          style: const TextStyle(
-                            color: Colors.purple,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
+                      ),
+                    );
+                  },
+                ),
     );
   }
 }
@@ -670,154 +696,155 @@ class _BrowseTshirtsPageState extends State<BrowseTshirtsPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _allTshirts.isEmpty
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.shopping_bag_outlined,
-                size: 100, color: Colors.grey[300]),
-            const SizedBox(height: 16),
-            Text(
-              'No t-shirts available yet',
-              style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Check back soon for new designs!',
-              style: TextStyle(color: Colors.grey[500]),
-            ),
-          ],
-        ),
-      )
-          : RefreshIndicator(
-        onRefresh: _loadAllTshirts,
-        child: GridView.builder(
-          padding: const EdgeInsets.all(16),
-          gridDelegate:
-          const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.7,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-          ),
-          itemCount: _allTshirts.length,
-          itemBuilder: (context, index) {
-            final tshirt = _allTshirts[index];
-            final designer = tshirt['users'] as Map<String, dynamic>;
-            final has3DModel = tshirt['models_3d'] != null &&
-                (tshirt['models_3d'] as List).isNotEmpty;
-
-            return GestureDetector(
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('🛒 Product details coming soon!'),
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.shopping_bag_outlined,
+                          size: 100, color: Colors.grey[300]),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No t-shirts available yet',
+                        style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Check back soon for new designs!',
+                        style: TextStyle(color: Colors.grey[500]),
+                      ),
+                    ],
                   ),
-                );
-              },
-              child: Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(15),
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadAllTshirts,
+                  child: GridView.builder(
+                    padding: const EdgeInsets.all(16),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.7,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                    ),
+                    itemCount: _allTshirts.length,
+                    itemBuilder: (context, index) {
+                      final tshirt = _allTshirts[index];
+                      final designer = tshirt['users'] as Map<String, dynamic>;
+                      final has3DModel = tshirt['models_3d'] != null &&
+                          (tshirt['models_3d'] as List).isNotEmpty;
+
+                      return GestureDetector(
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('🛒 Product details coming soon!'),
                             ),
-                            child: tshirt['image_url'] != null
-                                ? Image.network(
-                              tshirt['image_url'],
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            )
-                                : Container(
-                              color: Colors.grey[300],
-                              child: const Icon(Icons.image,
-                                  size: 60),
-                            ),
+                          );
+                        },
+                        child: Card(
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
                           ),
-                          if (has3DModel)
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.purple,
-                                  borderRadius:
-                                  BorderRadius.circular(12),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Stack(
                                   children: [
-                                    Icon(Icons.view_in_ar,
-                                        size: 10, color: Colors.white),
-                                    SizedBox(width: 2),
+                                    ClipRRect(
+                                      borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(15),
+                                      ),
+                                      child: tshirt['image_url'] != null
+                                          ? Image.network(
+                                              tshirt['image_url'],
+                                              width: double.infinity,
+                                              fit: BoxFit.cover,
+                                            )
+                                          : Container(
+                                              color: Colors.grey[300],
+                                              child: const Icon(Icons.image,
+                                                  size: 60),
+                                            ),
+                                    ),
+                                    if (has3DModel)
+                                      Positioned(
+                                        top: 8,
+                                        right: 8,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 3,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.purple,
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          child: const Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(Icons.view_in_ar,
+                                                  size: 10,
+                                                  color: Colors.white),
+                                              SizedBox(width: 2),
+                                              Text(
+                                                'AR',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 9,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
                                     Text(
-                                      'AR',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 9,
+                                      tshirt['title'],
+                                      style: const TextStyle(
                                         fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'by ${designer['full_name']}',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      '₱${tshirt['price']}',
+                                      style: const TextStyle(
+                                        color: Color(0xFF2E3192),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            tshirt['title'],
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'by ${designer['full_name']}',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 11,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '₱${tshirt['price']}',
-                            style: const TextStyle(
-                              color: Color(0xFF2E3192),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
-            );
-          },
-        ),
-      ),
     );
   }
 }

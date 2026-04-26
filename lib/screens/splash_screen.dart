@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
-import 'login_screen.dart';
+import 'admin_login_screen.dart';
+import 'role_selection_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -32,12 +34,21 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    // Navigate to LoginScreen after 3 seconds
+    // Navigate based on platform after 3 seconds
     Timer(const Duration(seconds: 3), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
+      if (kIsWeb) {
+        // Web: Go to Admin Login Screen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+        );
+      } else {
+        // Mobile: Go to Role Selection Screen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const RoleSelectionScreen()),
+        );
+      }
     });
   }
 

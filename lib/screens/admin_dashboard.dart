@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'login_screen.dart';
+import 'admin_login_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({Key? key}) : super(key: key);
@@ -21,6 +21,21 @@ class _AdminDashboardState extends State<AdminDashboard> {
   @override
   void initState() {
     super.initState();
+    _checkAuthentication();
+  }
+
+  Future<void> _checkAuthentication() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      // Not authenticated, redirect to admin login
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const AdminLoginScreen()),
+        );
+        return;
+      }
+    }
+    // User is authenticated, load dashboard data
     _loadDashboardData();
   }
 
@@ -38,16 +53,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
             .single();
 
         // Load design stats
-        final designsResponse = await Supabase.instance.client
-            .from('tshirts')
-            .select('status');
+        final designsResponse =
+            await Supabase.instance.client.from('tshirts').select('status');
 
         final designs = List<Map<String, dynamic>>.from(designsResponse);
 
         // Load user stats
-        final usersResponse = await Supabase.instance.client
-            .from('users')
-            .select('role');
+        final usersResponse =
+            await Supabase.instance.client.from('users').select('role');
 
         final users = List<Map<String, dynamic>>.from(usersResponse);
 
@@ -55,7 +68,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
           _userName = userResponse['full_name'];
           _totalDesigns = designs.length;
           _pendingCount = designs.where((d) => d['status'] == 'pending').length;
-          _approvedCount = designs.where((d) => d['status'] == 'approved').length;
+          _approvedCount =
+              designs.where((d) => d['status'] == 'approved').length;
           _totalUsers = users.length;
           _totalDesigners = users.where((u) => u['role'] == 'designer').length;
           _isLoading = false;
@@ -93,7 +107,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const LoginScreen()),
-              (route) => false,
+          (route) => false,
         );
       }
     }
@@ -122,14 +136,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
         ),
         child: SafeArea(
-          child: Column(
+          child: ListView(
+            padding: EdgeInsets.zero,
             children: [
               // Header Section
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Profile and Logout
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -178,39 +193,45 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       ],
                     ),
                     const SizedBox(height: 24),
-
-                    // Stats Grid
-                    GridView.count(
-                      shrinkWrap: true,
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                      childAspectRatio: 1.5,
-                      physics: const NeverScrollableScrollPhysics(),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
                       children: [
-                        _buildStatCard(
-                          'Pending',
-                          _pendingCount.toString(),
-                          Icons.pending_actions,
-                          Colors.white,
+                        SizedBox(
+                          width: (MediaQuery.of(context).size.width - 72) / 2,
+                          child: _buildStatCard(
+                            'Pending',
+                            _pendingCount.toString(),
+                            Icons.pending_actions,
+                            Colors.white,
+                          ),
                         ),
-                        _buildStatCard(
-                          'Approved',
-                          _approvedCount.toString(),
-                          Icons.check_circle,
-                          Colors.white,
+                        SizedBox(
+                          width: (MediaQuery.of(context).size.width - 72) / 2,
+                          child: _buildStatCard(
+                            'Approved',
+                            _approvedCount.toString(),
+                            Icons.check_circle,
+                            Colors.white,
+                          ),
                         ),
-                        _buildStatCard(
-                          'Total Designs',
-                          _totalDesigns.toString(),
-                          Icons.inventory,
-                          Colors.white,
+                        SizedBox(
+                          width: (MediaQuery.of(context).size.width - 72) / 2,
+                          child: _buildStatCard(
+                            'Total Designs',
+                            _totalDesigns.toString(),
+                            Icons.inventory,
+                            Colors.white,
+                          ),
                         ),
-                        _buildStatCard(
-                          'Designers',
-                          _totalDesigners.toString(),
-                          Icons.people,
-                          Colors.white,
+                        SizedBox(
+                          width: (MediaQuery.of(context).size.width - 72) / 2,
+                          child: _buildStatCard(
+                            'Designers',
+                            _totalDesigners.toString(),
+                            Icons.people,
+                            Colors.white,
+                          ),
                         ),
                       ],
                     ),
@@ -218,137 +239,124 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 ),
               ),
 
-              // Main Menu Section
-              Expanded(
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(30),
-                      topRight: Radius.circular(30),
-                    ),
+              Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(30),
+                    topRight: Radius.circular(30),
                   ),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Administration',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Administration',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
                         ),
-                        const SizedBox(height: 24),
-
-                        // Pending Approvals Card (Priority)
-                        _buildFeatureCard(
-                          icon: Icons.pending_actions,
-                          title: 'Pending Approvals',
-                          description: 'Review and approve designer submissions',
-                          gradient: const LinearGradient(
-                            colors: [Colors.orange, Colors.deepOrange],
-                          ),
-                          badge: _pendingCount > 0 ? _pendingCount.toString() : null,
-                          priority: true,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => AdminPendingApprovalsPage(
-                                  onRefresh: _loadDashboardData,
-                                ),
+                      ),
+                      const SizedBox(height: 24),
+                      _buildFeatureCard(
+                        icon: Icons.pending_actions,
+                        title: 'Pending Approvals',
+                        description: 'Review and approve designer submissions',
+                        gradient: const LinearGradient(
+                          colors: [Colors.orange, Colors.deepOrange],
+                        ),
+                        badge:
+                            _pendingCount > 0 ? _pendingCount.toString() : null,
+                        priority: true,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => AdminPendingApprovalsPage(
+                                onRefresh: _loadDashboardData,
                               ),
-                            );
-                          },
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildFeatureCard(
+                        icon: Icons.inventory,
+                        title: 'All Designs',
+                        description: 'View and manage all t-shirt designs',
+                        gradient: const LinearGradient(
+                          colors: [Colors.blue, Colors.lightBlue],
                         ),
-
-                        const SizedBox(height: 16),
-
-                        // All Designs Card
-                        _buildFeatureCard(
-                          icon: Icons.inventory,
-                          title: 'All Designs',
-                          description: 'View and manage all t-shirt designs',
-                          gradient: const LinearGradient(
-                            colors: [Colors.blue, Colors.lightBlue],
-                          ),
-                          badge: _totalDesigns > 0 ? _totalDesigns.toString() : null,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => AdminAllDesignsPage(
-                                  onRefresh: _loadDashboardData,
-                                ),
+                        badge:
+                            _totalDesigns > 0 ? _totalDesigns.toString() : null,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => AdminAllDesignsPage(
+                                onRefresh: _loadDashboardData,
                               ),
-                            );
-                          },
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildFeatureCard(
+                        icon: Icons.shopping_bag,
+                        title: 'Browse T-Shirts',
+                        description: 'View store as customer perspective',
+                        gradient: const LinearGradient(
+                          colors: [Colors.green, Colors.lightGreen],
                         ),
-
-                        const SizedBox(height: 16),
-
-                        // Browse as Customer Card
-                        _buildFeatureCard(
-                          icon: Icons.shopping_bag,
-                          title: 'Browse T-Shirts',
-                          description: 'View store as customer perspective',
-                          gradient: const LinearGradient(
-                            colors: [Colors.green, Colors.lightGreen],
-                          ),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const AdminBrowseTshirtsPage(),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AdminBrowseTshirtsPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildFeatureCard(
+                        icon: Icons.people,
+                        title: 'Manage Users',
+                        description: 'View all users and manage accounts',
+                        gradient: const LinearGradient(
+                          colors: [Colors.purple, Colors.deepPurple],
+                        ),
+                        badge: _totalUsers > 0 ? _totalUsers.toString() : null,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AdminManageUsersPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildFeatureCard(
+                        icon: Icons.analytics,
+                        title: 'Analytics',
+                        description: 'View platform statistics and reports',
+                        gradient: const LinearGradient(
+                          colors: [Colors.teal, Colors.cyan],
+                        ),
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                '📊 Analytics feature coming soon!',
                               ),
-                            );
-                          },
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Manage Users Card
-                        _buildFeatureCard(
-                          icon: Icons.people,
-                          title: 'Manage Users',
-                          description: 'View all users and manage accounts',
-                          gradient: const LinearGradient(
-                            colors: [Colors.purple, Colors.deepPurple],
-                          ),
-                          badge: _totalUsers > 0 ? _totalUsers.toString() : null,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const AdminManageUsersPage(),
-                              ),
-                            );
-                          },
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Analytics Card
-                        _buildFeatureCard(
-                          icon: Icons.analytics,
-                          title: 'Analytics',
-                          description: 'View platform statistics and reports',
-                          gradient: const LinearGradient(
-                            colors: [Colors.teal, Colors.cyan],
-                          ),
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('📊 Analytics feature coming soon!'),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -359,7 +367,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon, Color textColor) {
+  Widget _buildStatCard(
+      String label, String value, IconData icon, Color textColor) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -498,10 +507,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
 class AdminPendingApprovalsPage extends StatefulWidget {
   final VoidCallback onRefresh;
 
-  const AdminPendingApprovalsPage({Key? key, required this.onRefresh}) : super(key: key);
+  const AdminPendingApprovalsPage({Key? key, required this.onRefresh})
+      : super(key: key);
 
   @override
-  State<AdminPendingApprovalsPage> createState() => _AdminPendingApprovalsPageState();
+  State<AdminPendingApprovalsPage> createState() =>
+      _AdminPendingApprovalsPageState();
 }
 
 class _AdminPendingApprovalsPageState extends State<AdminPendingApprovalsPage> {
@@ -538,19 +549,18 @@ class _AdminPendingApprovalsPageState extends State<AdminPendingApprovalsPage> {
     try {
       await Supabase.instance.client
           .from('tshirts')
-          .update({'status': status})
-          .eq('id', designId);
+          .update({'status': status}).eq('id', designId);
 
       // Also update 3D model status if exists
       await Supabase.instance.client
           .from('models_3d')
-          .update({'status': status})
-          .eq('tshirt_id', designId);
+          .update({'status': status}).eq('tshirt_id', designId);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ Design ${status == 'approved' ? 'approved' : 'rejected'}!'),
+            content: Text(
+                '✅ Design ${status == 'approved' ? 'approved' : 'rejected'}!'),
             backgroundColor: status == 'approved' ? Colors.green : Colors.red,
           ),
         );
@@ -579,7 +589,8 @@ class _AdminPendingApprovalsPageState extends State<AdminPendingApprovalsPage> {
               padding: const EdgeInsets.only(right: 16),
               child: Center(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
@@ -599,42 +610,43 @@ class _AdminPendingApprovalsPageState extends State<AdminPendingApprovalsPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _pendingDesigns.isEmpty
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.check_circle_outline, size: 100, color: Colors.grey[300]),
-            const SizedBox(height: 16),
-            Text(
-              'No pending approvals',
-              style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'All designs have been reviewed',
-              style: TextStyle(color: Colors.grey[500]),
-            ),
-          ],
-        ),
-      )
-          : RefreshIndicator(
-        onRefresh: _loadPendingDesigns,
-        child: ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: _pendingDesigns.length,
-          itemBuilder: (context, index) {
-            final design = _pendingDesigns[index];
-            return _buildApprovalCard(design);
-          },
-        ),
-      ),
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.check_circle_outline,
+                          size: 100, color: Colors.grey[300]),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No pending approvals',
+                        style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'All designs have been reviewed',
+                        style: TextStyle(color: Colors.grey[500]),
+                      ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadPendingDesigns,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _pendingDesigns.length,
+                    itemBuilder: (context, index) {
+                      final design = _pendingDesigns[index];
+                      return _buildApprovalCard(design);
+                    },
+                  ),
+                ),
     );
   }
 
   Widget _buildApprovalCard(Map<String, dynamic> design) {
     final designer = design['users'] as Map<String, dynamic>;
-    final has3DModel = design['models_3d'] != null &&
-        (design['models_3d'] as List).isNotEmpty;
+    final has3DModel =
+        design['models_3d'] != null && (design['models_3d'] as List).isNotEmpty;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -646,7 +658,8 @@ class _AdminPendingApprovalsPageState extends State<AdminPendingApprovalsPage> {
           // Image
           if (design['image_url'] != null)
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(12)),
               child: Image.network(
                 design['image_url'],
                 height: 200,
@@ -732,7 +745,8 @@ class _AdminPendingApprovalsPageState extends State<AdminPendingApprovalsPage> {
                 const SizedBox(height: 12),
 
                 // Description
-                if (design['description'] != null && design['description'].isNotEmpty)
+                if (design['description'] != null &&
+                    design['description'].isNotEmpty)
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -769,13 +783,18 @@ class _AdminPendingApprovalsPageState extends State<AdminPendingApprovalsPage> {
                 const SizedBox(height: 12),
 
                 // Sizes
-                Text('Sizes:', style: TextStyle(color: Colors.grey[700], fontSize: 14, fontWeight: FontWeight.w600)),
+                Text('Sizes:',
+                    style: TextStyle(
+                        color: Colors.grey[700],
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 6,
                   children: (design['sizes'] as List).map((size) {
                     return Chip(
-                      label: Text(size.toString(), style: const TextStyle(fontSize: 12)),
+                      label: Text(size.toString(),
+                          style: const TextStyle(fontSize: 12)),
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       backgroundColor: Colors.blue[50],
@@ -786,13 +805,18 @@ class _AdminPendingApprovalsPageState extends State<AdminPendingApprovalsPage> {
                 const SizedBox(height: 12),
 
                 // Colors
-                Text('Colors:', style: TextStyle(color: Colors.grey[700], fontSize: 14, fontWeight: FontWeight.w600)),
+                Text('Colors:',
+                    style: TextStyle(
+                        color: Colors.grey[700],
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 6,
                   children: (design['colors'] as List).map((color) {
                     return Chip(
-                      label: Text(color.toString(), style: const TextStyle(fontSize: 12)),
+                      label: Text(color.toString(),
+                          style: const TextStyle(fontSize: 12)),
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       backgroundColor: Colors.orange[50],
@@ -807,7 +831,8 @@ class _AdminPendingApprovalsPageState extends State<AdminPendingApprovalsPage> {
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () => _updateDesignStatus(design['id'], 'approved'),
+                        onPressed: () =>
+                            _updateDesignStatus(design['id'], 'approved'),
                         icon: const Icon(Icons.check),
                         label: const Text('Approve'),
                         style: ElevatedButton.styleFrom(
@@ -823,7 +848,8 @@ class _AdminPendingApprovalsPageState extends State<AdminPendingApprovalsPage> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () => _updateDesignStatus(design['id'], 'rejected'),
+                        onPressed: () =>
+                            _updateDesignStatus(design['id'], 'rejected'),
                         icon: const Icon(Icons.close),
                         label: const Text('Reject'),
                         style: ElevatedButton.styleFrom(
@@ -876,7 +902,8 @@ class _AdminPendingApprovalsPageState extends State<AdminPendingApprovalsPage> {
 class AdminAllDesignsPage extends StatefulWidget {
   final VoidCallback onRefresh;
 
-  const AdminAllDesignsPage({Key? key, required this.onRefresh}) : super(key: key);
+  const AdminAllDesignsPage({Key? key, required this.onRefresh})
+      : super(key: key);
 
   @override
   State<AdminAllDesignsPage> createState() => _AdminAllDesignsPageState();
@@ -999,105 +1026,109 @@ class _AdminAllDesignsPageState extends State<AdminAllDesignsPage> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _filteredDesigns.isEmpty
-                ? const Center(child: Text('No designs found'))
-                : RefreshIndicator(
-              onRefresh: _loadAllDesigns,
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: _filteredDesigns.length,
-                itemBuilder: (context, index) {
-                  final design = _filteredDesigns[index];
-                  final designer = design['users'] as Map<String, dynamic>;
-                  final status = design['status'] as String;
+                    ? const Center(child: Text('No designs found'))
+                    : RefreshIndicator(
+                        onRefresh: _loadAllDesigns,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _filteredDesigns.length,
+                          itemBuilder: (context, index) {
+                            final design = _filteredDesigns[index];
+                            final designer =
+                                design['users'] as Map<String, dynamic>;
+                            final status = design['status'] as String;
 
-                  Color statusColor;
-                  IconData statusIcon;
+                            Color statusColor;
+                            IconData statusIcon;
 
-                  switch (status) {
-                    case 'approved':
-                      statusColor = Colors.green;
-                      statusIcon = Icons.check_circle;
-                      break;
-                    case 'rejected':
-                      statusColor = Colors.red;
-                      statusIcon = Icons.cancel;
-                      break;
-                    default:
-                      statusColor = Colors.orange;
-                      statusIcon = Icons.pending;
-                  }
+                            switch (status) {
+                              case 'approved':
+                                statusColor = Colors.green;
+                                statusIcon = Icons.check_circle;
+                                break;
+                              case 'rejected':
+                                statusColor = Colors.red;
+                                statusIcon = Icons.cancel;
+                                break;
+                              default:
+                                statusColor = Colors.orange;
+                                statusIcon = Icons.pending;
+                            }
 
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    child: ListTile(
-                      leading: design['image_url'] != null
-                          ? ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          design['image_url'],
-                          width: 60,
-                          height: 60,
-                          fit: BoxFit.cover,
-                        ),
-                      )
-                          : Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.image),
-                      ),
-                      title: Text(
-                        design['title'],
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('by ${designer['full_name']}'),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Icon(statusIcon, size: 14, color: statusColor),
-                              const SizedBox(width: 4),
-                              Text(
-                                status.toUpperCase(),
-                                style: TextStyle(
-                                  color: statusColor,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 11,
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              child: ListTile(
+                                leading: design['image_url'] != null
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Image.network(
+                                          design['image_url'],
+                                          width: 60,
+                                          height: 60,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      )
+                                    : Container(
+                                        width: 60,
+                                        height: 60,
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[300],
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        child: const Icon(Icons.image),
+                                      ),
+                                title: Text(
+                                  design['title'],
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('by ${designer['full_name']}'),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Icon(statusIcon,
+                                            size: 14, color: statusColor),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          status.toUpperCase(),
+                                          style: TextStyle(
+                                            color: statusColor,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                trailing: PopupMenuButton(
+                                  itemBuilder: (context) => [
+                                    const PopupMenuItem(
+                                      value: 'delete',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.delete, color: Colors.red),
+                                          SizedBox(width: 8),
+                                          Text('Delete'),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                  onSelected: (value) {
+                                    if (value == 'delete') {
+                                      _deleteDesign(design['id']);
+                                    }
+                                  },
                                 ),
                               ),
-                            ],
-                          ),
-                        ],
+                            );
+                          },
+                        ),
                       ),
-                      trailing: PopupMenuButton(
-                        itemBuilder: (context) => [
-                          const PopupMenuItem(
-                            value: 'delete',
-                            child: Row(
-                              children: [
-                                Icon(Icons.delete, color: Colors.red),
-                                SizedBox(width: 8),
-                                Text('Delete'),
-                              ],
-                            ),
-                          ),
-                        ],
-                        onSelected: (value) {
-                          if (value == 'delete') {
-                            _deleteDesign(design['id']);
-                          }
-                        },
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
           ),
         ],
       ),
@@ -1117,7 +1148,8 @@ class _AdminAllDesignsPageState extends State<AdminAllDesignsPage> {
         decoration: BoxDecoration(
           color: isSelected ? Colors.blue : Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? Colors.blue : Colors.grey[300]!),
+          border:
+              Border.all(color: isSelected ? Colors.blue : Colors.grey[300]!),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1202,141 +1234,145 @@ class _AdminBrowseTshirtsPageState extends State<AdminBrowseTshirtsPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _approvedTshirts.isEmpty
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.shopping_bag_outlined, size: 100, color: Colors.grey[300]),
-            const SizedBox(height: 16),
-            Text(
-              'No approved t-shirts yet',
-              style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Approve some designs to see them here',
-              style: TextStyle(color: Colors.grey[500]),
-            ),
-          ],
-        ),
-      )
-          : RefreshIndicator(
-        onRefresh: _loadApprovedTshirts,
-        child: GridView.builder(
-          padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.7,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-          ),
-          itemCount: _approvedTshirts.length,
-          itemBuilder: (context, index) {
-            final tshirt = _approvedTshirts[index];
-            final designer = tshirt['users'] as Map<String, dynamic>;
-            final has3DModel = tshirt['models_3d'] != null &&
-                (tshirt['models_3d'] as List).isNotEmpty;
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.shopping_bag_outlined,
+                          size: 100, color: Colors.grey[300]),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No approved t-shirts yet',
+                        style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Approve some designs to see them here',
+                        style: TextStyle(color: Colors.grey[500]),
+                      ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadApprovedTshirts,
+                  child: GridView.builder(
+                    padding: const EdgeInsets.all(16),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.7,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                    ),
+                    itemCount: _approvedTshirts.length,
+                    itemBuilder: (context, index) {
+                      final tshirt = _approvedTshirts[index];
+                      final designer = tshirt['users'] as Map<String, dynamic>;
+                      final has3DModel = tshirt['models_3d'] != null &&
+                          (tshirt['models_3d'] as List).isNotEmpty;
 
-            return Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(15),
-                          ),
-                          child: tshirt['image_url'] != null
-                              ? Image.network(
-                            tshirt['image_url'],
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          )
-                              : Container(
-                            color: Colors.grey[300],
-                            child: const Icon(Icons.image, size: 60),
-                          ),
+                      return Card(
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
                         ),
-                        if (has3DModel)
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.purple,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Stack(
                                 children: [
-                                  Icon(Icons.view_in_ar,
-                                      size: 10, color: Colors.white),
-                                  SizedBox(width: 2),
+                                  ClipRRect(
+                                    borderRadius: const BorderRadius.vertical(
+                                      top: Radius.circular(15),
+                                    ),
+                                    child: tshirt['image_url'] != null
+                                        ? Image.network(
+                                            tshirt['image_url'],
+                                            width: double.infinity,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Container(
+                                            color: Colors.grey[300],
+                                            child: const Icon(Icons.image,
+                                                size: 60),
+                                          ),
+                                  ),
+                                  if (has3DModel)
+                                    Positioned(
+                                      top: 8,
+                                      right: 8,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 3,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.purple,
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        child: const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.view_in_ar,
+                                                size: 10, color: Colors.white),
+                                            SizedBox(width: 2),
+                                            Text(
+                                              'AR',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
                                   Text(
-                                    'AR',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 9,
+                                    tshirt['title'],
+                                    style: const TextStyle(
                                       fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'by ${designer['full_name']}',
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    '₱${tshirt['price']}',
+                                    style: const TextStyle(
+                                      color: Colors.green,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                          ),
-                      ],
-                    ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          tshirt['title'],
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'by ${designer['full_name']}',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 11,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '₱${tshirt['price']}',
-                          style: const TextStyle(
-                            color: Colors.green,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      ),
+                ),
     );
   }
 }
@@ -1418,17 +1454,17 @@ class _AdminManageUsersPageState extends State<AdminManageUsersPage> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _filteredUsers.isEmpty
-                ? const Center(child: Text('No users found'))
-                : RefreshIndicator(
-              onRefresh: _loadAllUsers,
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: _filteredUsers.length,
-                itemBuilder: (context, index) {
-                  return _buildUserCard(_filteredUsers[index]);
-                },
-              ),
-            ),
+                    ? const Center(child: Text('No users found'))
+                    : RefreshIndicator(
+                        onRefresh: _loadAllUsers,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _filteredUsers.length,
+                          itemBuilder: (context, index) {
+                            return _buildUserCard(_filteredUsers[index]);
+                          },
+                        ),
+                      ),
           ),
         ],
       ),
@@ -1448,7 +1484,8 @@ class _AdminManageUsersPageState extends State<AdminManageUsersPage> {
         decoration: BoxDecoration(
           color: isSelected ? Colors.purple : Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? Colors.purple : Colors.grey[300]!),
+          border:
+              Border.all(color: isSelected ? Colors.purple : Colors.grey[300]!),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

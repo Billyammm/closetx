@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'signup_screen.dart';
-import 'home_screen.dart';
+import 'customer_dashboard.dart';
+import 'designer_dashboard.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  final String? userType;
+
+  const LoginScreen({Key? key, this.userType}) : super(key: key);
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -36,8 +39,18 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (response.user != null && mounted) {
+        // Navigate based on user type
+        Widget nextScreen;
+        if (widget.userType == 'customer') {
+          nextScreen = const CustomerDashboard();
+        } else if (widget.userType == 'designer') {
+          nextScreen = const DesignerDashboard();
+        } else {
+          nextScreen = const CustomerDashboard(); // Default fallback
+        }
+
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          MaterialPageRoute(builder: (_) => nextScreen),
         );
       }
     } on AuthException catch (e) {
@@ -84,7 +97,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     height: 100,
                     width: 100,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -100,9 +116,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   Text(
                     'Welcome Back',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF2E3192),
-                    ),
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF2E3192),
+                        ),
                     textAlign: TextAlign.center,
                   ),
 
@@ -111,8 +127,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   Text(
                     'Sign in to continue to ClosetX',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                          color: Colors.grey[600],
+                        ),
                     textAlign: TextAlign.center,
                   ),
 
@@ -150,7 +166,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                          _obscurePassword
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
                         ),
                         onPressed: () {
                           setState(() => _obscurePassword = !_obscurePassword);
@@ -198,20 +216,21 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     child: _isLoading
                         ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
                         : const Text(
-                      'Sign In',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                            'Sign In',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                   ),
 
                   const SizedBox(height: 24),
