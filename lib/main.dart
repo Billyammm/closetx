@@ -8,8 +8,8 @@ void main() async {
 
   // Initialize Supabase
   await Supabase.initialize(
-    url: 'https://zqvfsxfaawhhcdadlikg.supabase.co', // Replace with your Supabase URL
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxdmZzeGZhYXdoaGNkYWRsaWtnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2MzA5NzIsImV4cCI6MjA3NjIwNjk3Mn0.Vyzxy0piTXZVW4xA0RS_n1XM0szeA3vU9v4t3geV7pA', // Replace with your Supabase anon key
+    url: 'https://pdeywqyobsefgwycevwf.supabase.co', // Replace with your Supabase URL
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkZXl3cXlvYnNlZmd3eWNldndmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwNDI0MzQsImV4cCI6MjA5MjYxODQzNH0.1Vxf7-2uZpqEpZn71s6eZknli58rgAzcGwhc_MSFhqI', // Replace with your Supabase anon key
   );
 
   runApp(const ClosetXApp());
