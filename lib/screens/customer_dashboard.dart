@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'ar_tryon_screen.dart';
 import 'login_screen.dart';
 
 class CustomerDashboard extends StatefulWidget {
@@ -34,7 +35,6 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
           _isLoading = false;
         });
       } catch (e) {
-        print('Error loading user: $e');
         setState(() => _isLoading = false);
       }
     } else {
@@ -461,31 +461,29 @@ class ARTryOnPage extends StatefulWidget {
 }
 
 class _ARTryOnPageState extends State<ARTryOnPage> {
-  List<Map<String, dynamic>> _arTshirts = [];
-  bool _isLoading = false;
+  List<Map<String, dynamic>> _arGarments = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadARTshirts();
+    _loadARGarments();
   }
 
-  Future<void> _loadARTshirts() async {
-    setState(() => _isLoading = true);
+  Future<void> _loadARGarments() async {
     try {
+      // Fetch approved t-shirts with 3D models from Supabase
       final response = await Supabase.instance.client
           .from('tshirts')
-          .select('*, users!inner(full_name), models_3d!inner(*)')
+          .select('*, users!inner(full_name), models_3d(*)')
           .eq('status', 'approved')
-          .eq('models_3d.status', 'approved')
           .order('created_at', ascending: false);
 
       setState(() {
-        _arTshirts = List<Map<String, dynamic>>.from(response);
+        _arGarments = List<Map<String, dynamic>>.from(response);
         _isLoading = false;
       });
     } catch (e) {
-      print('Error loading AR t-shirts: $e');
       setState(() => _isLoading = false);
     }
   }
@@ -495,12 +493,11 @@ class _ARTryOnPageState extends State<ARTryOnPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('AR Try-On'),
-        backgroundColor: Colors.purple,
-        foregroundColor: Colors.white,
+        backgroundColor: const Color(0xFF2E3192),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _arTshirts.isEmpty
+          : _arGarments.isEmpty
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -509,7 +506,7 @@ class _ARTryOnPageState extends State<ARTryOnPage> {
                           size: 100, color: Colors.grey[300]),
                       const SizedBox(height: 16),
                       Text(
-                        'No AR-enabled t-shirts yet',
+                        'No AR-enabled garments yet',
                         style: TextStyle(fontSize: 18, color: Colors.grey[600]),
                       ),
                       const SizedBox(height: 8),
@@ -520,125 +517,46 @@ class _ARTryOnPageState extends State<ARTryOnPage> {
                     ],
                   ),
                 )
-              : GridView.builder(
+              : ListView.separated(
                   padding: const EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.7,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                  ),
-                  itemCount: _arTshirts.length,
+                  itemCount: _arGarments.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 16),
                   itemBuilder: (context, index) {
-                    final tshirt = _arTshirts[index];
-                    final designer = tshirt['users'] as Map<String, dynamic>;
+                    final garment = _arGarments[index];
+                    final designer = garment['users'] as Map<String, dynamic>;
 
-                    return GestureDetector(
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('🎉 AR Try-On feature coming soon!'),
-                            backgroundColor: Colors.purple,
-                          ),
-                        );
-                      },
-                      child: Card(
-                        elevation: 4,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                          side:
-                              const BorderSide(color: Colors.purple, width: 2),
+                    return Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      elevation: 4,
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.all(16),
+                        leading: CircleAvatar(
+                          backgroundColor: const Color(0xFF4A90E2),
+                          child:
+                              const Icon(Icons.checkroom, color: Colors.white),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Stack(
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: const BorderRadius.vertical(
-                                      top: Radius.circular(15),
-                                    ),
-                                    child: tshirt['image_url'] != null
-                                        ? Image.network(
-                                            tshirt['image_url'],
-                                            width: double.infinity,
-                                            fit: BoxFit.cover,
-                                          )
-                                        : Container(
-                                            color: Colors.grey[300],
-                                            child: const Icon(Icons.image,
-                                                size: 60),
-                                          ),
-                                  ),
-                                  Positioned(
-                                    top: 8,
-                                    right: 8,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.purple,
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: const Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.view_in_ar,
-                                              size: 12, color: Colors.white),
-                                          SizedBox(width: 4),
-                                          Text(
-                                            'AR',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                        title: Text(garment['title'],
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text('by ${designer['full_name']}'),
+                        trailing: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2E3192),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    ARTryOnScreen(garmentData: garment),
                               ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    tshirt['title'],
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'by ${designer['full_name']}',
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    '₱${tshirt['price']}',
-                                    style: const TextStyle(
-                                      color: Colors.purple,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                            );
+                          },
+                          child: const Text('Try On'),
                         ),
                       ),
                     );
@@ -680,7 +598,6 @@ class _BrowseTshirtsPageState extends State<BrowseTshirtsPage> {
         _isLoading = false;
       });
     } catch (e) {
-      print('Error loading t-shirts: $e');
       setState(() => _isLoading = false);
     }
   }

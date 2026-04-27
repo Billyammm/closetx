@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
 import 'admin_login_screen.dart';
-import 'role_selection_screen.dart';
+import 'customer_dashboard.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -43,10 +43,10 @@ class _SplashScreenState extends State<SplashScreen>
           MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
         );
       } else {
-        // Mobile: Go to Role Selection Screen
+        // Mobile: Start in guest mode with the customer dashboard
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const RoleSelectionScreen()),
+          MaterialPageRoute(builder: (context) => const CustomerDashboard()),
         );
       }
     });

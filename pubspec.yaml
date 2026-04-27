@@ -1,10 +1,10 @@
 name: closetx
 description: An e-commerce store for t-shirts with AR try-on features
-publish_to: 'none'
+publish_to: "none"
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -19,6 +19,7 @@ dependencies:
   # UI & Icons
   google_fonts: ^6.1.0
   flutter_svg: ^2.0.9
+  camera: ^0.11.0+1
 
   # State Management
   provider: ^6.1.1
